@@ -41,12 +41,11 @@ for i in range(niter):
 # evaluate overall error
 print(f"OVERALL ERROR PER ROTATION: {np.degrees(np.array(errors).mean())} degrees")
 
-# get random roll and (x, y) for building fistVec
-rand_roll = np.pi/4 # CCW angle
+## test rotation matrix on simplest rotaion (90 degrees on unit vector)
 
-# center and normalize vector for ease of computation 
+# set simple parameters
+rand_roll = np.pi/4 # CCW angle
 fistVec = [1,0]
-fistVec = fistVec/np.linalg.norm(fistVec)
 
 # rotate fistVec to align with roll 
 c, s = np.round(np.cos(rand_roll),12), np.round(np.sin(rand_roll),12)
