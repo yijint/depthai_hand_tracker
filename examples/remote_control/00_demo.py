@@ -24,7 +24,8 @@ print(README)
 from HandController import HandController
 
 def trace(event):
-    event.print_line()
+    # event.print_line()
+    pass
 
 def trace_rotation(event):
     event.print_line() 
@@ -35,16 +36,24 @@ def trace_index_finger_tip(event):
     x, y = event.hand.landmarks[8,:2]
     print(f"Index finger tip : x={x}  y={y}") 
 
+def trace_fist(event):
+    pass
+    # event.print_line()
+    # # when fist is closed, landmark 12 is at center of fist...
+    # x, y = event.hand.landmarks[12,:2]
+    # print(f"Landmark : x={x}  y={y}") 
+
 config = {
     'renderer' : {'enable': True},
     
     'pose_actions' : [
-        {'name': '1_right_enter', 'pose':'ONE', 'hand':'right', 'callback': 'trace',"trigger":"enter", "first_trigger_delay":0.3},
-        {'name': '2_right_enter_leave', 'pose':['TWO','PEACE'], 'hand':'right', 'callback': 'trace',"trigger":"enter_leave"},
-        {'name': '3_right_periodic_1s', 'pose':'THREE', 'hand':'right', 'callback': 'trace', "trigger":"periodic", "first_trigger_delay":0, "next_trigger_delay": 1},
-        {'name': '4_right_periodic_0.3s', 'pose':'FOUR', 'hand':'right', 'callback': 'trace', "trigger":"periodic", "first_trigger_delay":0, "next_trigger_delay": 0.3},
-        {'name': '5_periodic_rotation', 'pose':'FIVE', 'callback': 'trace_rotation', "trigger":"periodic", "first_trigger_delay":0, "next_trigger_delay": 0.2},
-        {'name': '1_left_continuous_xy', 'pose':'ONE', 'hand':'left', 'callback': 'trace_index_finger_tip',"trigger":"continuous"},
+        # {'name': '1_right_enter', 'pose':'ONE', 'hand':'right', 'callback': 'trace',"trigger":"enter", "first_trigger_delay":0.3},
+        # {'name': '2_right_enter_leave', 'pose':['TWO','PEACE'], 'hand':'right', 'callback': 'trace',"trigger":"enter_leave"},
+        # {'name': '3_right_periodic_1s', 'pose':'THREE', 'hand':'right', 'callback': 'trace', "trigger":"periodic", "first_trigger_delay":0, "next_trigger_delay": 1},
+        # {'name': '4_right_periodic_0.3s', 'pose':'FOUR', 'hand':'right', 'callback': 'trace', "trigger":"periodic", "first_trigger_delay":0, "next_trigger_delay": 0.3},
+        # {'name': '5_periodic_rotation', 'pose':'FIVE', 'callback': 'trace_rotation', "trigger":"periodic", "first_trigger_delay":0, "next_trigger_delay": 0.2},
+        # {'name': '1_left_continuous_xy', 'pose':'ONE', 'hand':'left', 'callback': 'trace_index_finger_tip',"trigger":"continuous"},
+        {'name': 'simple_drag', 'pose':'FIST', 'hand':'any', 'callback': 'trace_fist',"trigger":"periodic", "first_trigger_delay":0, "next_trigger_delay": 0.25}
     ]
 }
 

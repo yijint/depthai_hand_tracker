@@ -1,17 +1,16 @@
-import time, sys, argparse, math, os
-# Force Mavlink 2.0 version...
-os.environ['MAVLINK20'] = '1'
+# Edited file - original file as courtesy of https://github.com/geaxgx/depthai_hand_tracker/tree/main/examples/remote_control
+# import cv2
+import time, sys, argparse, math
 sys.path.append("../..")
 import datetime
 from time import monotonic
 # Import DroneKit-Python
 from dronekit import connect, VehicleMode, Command, LocationGlobal
 from pymavlink import mavutil
-# new library w/ custom commands
+# made new library w/ custom commands
 from DroneKitAPI import Quadcopter
-import numpy as np
 
-ALL_POSES = ["ONE","TWO","THREE","FOUR","FIVE","FIST","PEACE","OK"]
+ALL_POSES = ["FIVE","FIST","PEACE","OK","ROCK"]
 
 # Default values for config parameters
 # Each one of these parameters can be superseded by a new value if specified in client code
@@ -38,8 +37,7 @@ DEFAULT_CONFIG = {
             'solo': True,
             'internal_fps': 30,
             'internal_frame_height': 640,
-            'use_gesture': True,
-            'xyz': True
+            'use_gesture': True
         },
     },
 
@@ -73,8 +71,6 @@ class Event:
         attrs = vars(self)
         print("--- EVENT :")
         print('\n'.join("\t%s: %s" % item for item in attrs.items()))
-    def print_line(self):
-        print(f"{self.time.strftime('%H:%M:%S.%f')[:-3]} : {self.category} {self.name} [{self.pose}] - hand: {self.handedness} - trigger: {self.trigger} - callback: {self.callback}")
     ### extra
     def extractPose(self):
         return self.pose
@@ -84,11 +80,10 @@ class Event:
         x, y = self.hand.landmarks[lm,:2]
         coords = [x,y]
         return coords
-    def getXYZ(self):
-        return self.hand.xyz
-    def getPalmDepth(self):
-        return self.hand.xyz[2] / 10
     ###
+    def print_line(self):
+        print(f"{self.time.strftime('%H:%M:%S.%f')[:-3]} : {self.category} {self.name} [{self.pose}] - hand: {self.handedness} - trigger: {self.trigger} - callback: {self.callback}")
+        
 
 
 class PoseEvent(Event):
@@ -143,6 +138,8 @@ def check_mandatory_keys(dic, mandatory_keys):
     """
     for k in mandatory_keys:
         assert k in dic.keys(), f"Mandatory key '{k}' not present in {dic}"
+
+###
 
 class HandController:
     def __init__(self, config={}):
@@ -283,44 +280,92 @@ class HandController:
                 self.caller_globals[e.callback](e)
 
     def loop(self):
-        quad = Quadcopter(connection_string='com5', baud=921600)
-        internalCamWidth = 1152
-        internalCamHeight = 648
+        ###############################################################################################
+        # Init
+        ###############################################################################################
+        
+        quad = Quadcopter(connection_string='/dev/ttyACM0', baud=921600)
+
+        print(" Type: %s" % quad.vehicle._vehicle_type)
+        print(" Armed: %s" % quad.vehicle.armed)
+        print(" System status: %s" % quad.vehicle.system_status.state)
+        print(" GPS: %s" % quad.vehicle.gps_0)
+        print(" Alt: %s" % quad.vehicle.location.global_relative_frame.alt)
+
+        timeA = 0
+        timeB = 0
+        # arming debugging parameter
+        armCheck = False
+        print("Standby...")
         while True:
-            self.now = monotonic()
-            frame, hands, bag = self.tracker.next_frame()
-            if frame is None: break
-            self.frame_nb += 1
-            events = self.generate_events(hands)
-            self.process_events(events)
-            poseCheck = "NONE"
-            rotation = 0
-            roll = quad.getAttitude("ROLL")
-            if len(events) != 0:
-                poseCheck = events[0].extractPose()
-            if poseCheck == "FIST":
-                # print(events[0].getPalmDepth())
-                x, y = events[0].hand.landmarks[12,:2]
-                fistVec = [x-internalCamWidth/2,internalCamHeight/2-y]
-                # print(fistVec)
-                roll = quad.getAttitude("ROLL")  # returns negative values for CW angles, and vice versa
-                mat = [[math.cos(roll),-math.sin(roll)],
-                       [math.sin(roll),math.cos(roll)]] # CCW rotation with angle roll
-                vector = np.matmul(mat,fistVec)
-                vector = vector/np.linalg.norm(vector)
-                print(vector)
-                # vector = [x',y']
-                # if x > some value, < some value
-                # move quad
-                # same for y values
-
-            if self.use_renderer:
-                frame = self.renderer.draw(frame, hands, bag)
-                key = self.renderer.waitKey(delay=1)
-                if key == 27 or key == ord('q'):
-                    break
-        self.renderer.exit()
+            if quad.vehicle.mode == 'GUIDED':
+                self.now = monotonic()
+                frame, hands, bag = self.tracker.next_frame()
+                if frame is None: break
+                self.frame_nb += 1
+                events = self.generate_events(hands)
+                self.process_events(events)
+                ### extra
+                poseCheck = "NONE"
+                rotation = 0
+                if len(events) != 0:
+                    poseCheck = events[0].extractPose()
+                if poseCheck in ALL_POSES:
+                    # if timeA is set, do nothing, otherwise set a start marker
+                    if timeA == 0:
+                        timeA = time.time()
+                    else:
+                        # increment timeB if timeA is 'set'
+                        timeB = time.time()
+                        if not quad.vehicle.armed:
+                            if poseCheck == "OK" and timeB - timeA >= 5:
+                                print("Arming and Taking Off")
+                                armCheck = True # text visual
+                                print(armCheck)
+                                # quad.takeoff(1.5)
+                                timeA = 0
+                                time.sleep(2)
+                        else:
+                            if poseCheck == "PEACE" and timeB - timeA >= 5:
+                                print("Disarming and Landing")
+                                armCheck = False # text visual
+                                # quad.land()
+                                time.sleep(2)
+                                # time.sleep(5)
+                                # Close vehicle object before exiting script
+                                print("Closing vehicle object")
+                                quad.vehicle.close()
+                                break
+                            elif poseCheck == "ROCK" and timeB - timeA >= 1:
+                                # rotation = events[0].getRotation()
+                                # if rotation > 0.25: # <-- ***check number here***
+                                #     quad.condition_yaw(30, relative=True)
+                                # elif rotation < -0.25:
+                                #     quad.condition_yaw(330, relative=True)
+                                # need some check for yaw completion...
+                                # time.sleep(1)
+                                pass
+                            elif poseCheck == "FIST" and timeB - timeA >= 1:
+                                # move quad in vertical plane facing user
+                                lm = events[0].getCoords(12)
+                                pass
+                            elif poseCheck == "FIVE" and timeB - timeA >= 1:
+                                # push/pull quad along axis facing user
+                                # need depth estimation
+                                pass
+                else:
+                    # if gesture stops being held, timeA marker gets reset
+                    timeA = 0
+                ###
+                if self.use_renderer:
+                    frame = self.renderer.draw(frame, hands, bag)
+                    key = self.renderer.waitKey(delay=1)
+                    if key == 27 or key == ord('q'):
+                        break
+                if quad.vehicle.mode != 'GUIDED':
+                    # need to edit
+                    pass
+            else:
+                pass
+        # self.renderer.exit()
         self.tracker.exit()
-            
-
-
