@@ -75,7 +75,7 @@ for i in range(niter):
     if is_success: success_rolls.append(rand_roll)
     else: fail_rolls.append(rand_roll)
 
-    # print values for debugging:
+    # print values for debugging
     print(f"before: {fistVec}\nroll: {np.degrees(rand_roll)} degrees\nrotated: {fistVec_rotated}\nangle: {np.degrees(angle_diff)} degrees\nangle error: {np.degrees(angle_error)} degree\nsuccess: {is_success}\n------------------------------------------------------")
 
 # print accuracy rates
