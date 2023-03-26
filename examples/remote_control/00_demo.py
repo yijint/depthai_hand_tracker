@@ -37,11 +37,12 @@ def trace_index_finger_tip(event):
     print(f"Index finger tip : x={x}  y={y}") 
 
 def trace_fist(event):
-    pass
-    # event.print_line()
-    # # when fist is closed, landmark 12 is at center of fist...
-    # x, y = event.hand.landmarks[12,:2]
-    # print(f"Landmark : x={x}  y={y}") 
+    internalCamWidth = 1152
+    internalCamHeight = 648
+    event.print_line()
+    # when fist is closed, landmark 12 is at center of fist...
+    x, y = event.hand.landmarks[12,:2]
+    print(f"Landmark : x={x-internalCamWidth/2}  y={internalCamHeight/2-y}") 
 
 config = {
     'renderer' : {'enable': True},
@@ -53,7 +54,7 @@ config = {
         # {'name': '4_right_periodic_0.3s', 'pose':'FOUR', 'hand':'right', 'callback': 'trace', "trigger":"periodic", "first_trigger_delay":0, "next_trigger_delay": 0.3},
         # {'name': '5_periodic_rotation', 'pose':'FIVE', 'callback': 'trace_rotation', "trigger":"periodic", "first_trigger_delay":0, "next_trigger_delay": 0.2},
         # {'name': '1_left_continuous_xy', 'pose':'ONE', 'hand':'left', 'callback': 'trace_index_finger_tip',"trigger":"continuous"},
-        {'name': 'simple_drag', 'pose':'FIST', 'hand':'any', 'callback': 'trace_fist',"trigger":"periodic", "first_trigger_delay":0, "next_trigger_delay": 0.25}
+        {'name': 'simple_drag', 'pose':'FIST', 'hand':'any', 'callback': 'trace_fist',"trigger":"periodic", "first_trigger_delay":0, "next_trigger_delay": 0.5}
     ]
 }
 

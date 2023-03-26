@@ -52,7 +52,6 @@ class HandTrackerRenderer:
         return (x, y)
 
     def draw_hand(self, hand):
-
         if self.tracker.use_lm:
             # (info_ref_x, info_ref_y): coords in the image of a reference point 
             # relatively to which hands information (score, handedness, xyz,...) are drawn
@@ -65,12 +64,37 @@ class HandTrackerRenderer:
                 if self.show_rot_rect:
                     cv2.polylines(self.frame, [np.array(hand.rect_points)], True, (0,255,255), 2, cv2.LINE_AA)
                 if self.show_landmarks:
-                    lines = [np.array([hand.landmarks[point] for point in line]).astype(np.int32) for line in LINES_HAND]
+                    lines = [np.array([hand.landmarks[point] for point in line]).astype(np.int) for line in LINES_HAND]
                     if self.show_handedness == 3:
                         color = (0,255,0) if hand.handedness > 0.5 else (0,0,255)
                     else:
                         color = (255, 0, 0)
                     cv2.polylines(self.frame, lines, False, color, int(1+thick_coef*3), cv2.LINE_AA)
+
+                    ## draw rectangle to determine a box threshold for determining hand movement
+                    internalCamWidth = 1152
+                    internalCamHeight = 648
+                    depth = hand.xyz[2] / 10
+
+                    # the equation for scaling the box threshold: box_padding = -3/4 * depth + 950 (from experiment) (for cm)
+                    box_padding = -3/4 * depth + 237.5
+
+                    # draw box (note that the y coordinate increases when going down the camera frame)
+                    min_x = int((internalCamWidth/2)-box_padding)
+                    max_y = int((internalCamHeight/2)+box_padding)
+                    max_x = int((internalCamWidth/2)+box_padding)
+                    min_y = int((internalCamHeight/2)-box_padding)
+                    box_color = (0,0,255)
+                    cv2.rectangle(self.frame, (min_x,min_y), (max_x,max_y), box_color)
+
+                    # determine if hand moved out of box 
+                    x, y = hand.landmarks[12,:2]
+                    # x = x-internalCamWidth/2
+                    # y = internalCamHeight/2-y
+                    is_hand_out = False
+                    if (x < min_x) or (y < min_y) or (x > max_x) or (y > max_y): is_hand_out = True
+                    print(f"hand is outside of box threshold: {is_hand_out}")
+                    
                     radius = int(1+thick_coef*5)
                     if self.tracker.use_gesture:
                         # color depending on finger state (1=open, 0=close, -1=unknown)

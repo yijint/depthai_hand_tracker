@@ -283,9 +283,9 @@ class HandController:
                 self.caller_globals[e.callback](e) 
 
     def loop(self):
-        quad = Quadcopter(connection_string='com5', baud=921600)
-        internalCamWidth = 1152
-        internalCamHeight = 648
+        # quad = Quadcopter(connection_string='com5', baud=921600)
+        # internalCamWidth = 1152
+        # internalCamHeight = 648
         while True:
             self.now = monotonic()
             frame, hands, bag = self.tracker.next_frame()
@@ -295,52 +295,43 @@ class HandController:
             self.process_events(events)
             poseCheck = "NONE"
             rotation = 0
-            roll = quad.getAttitude("ROLL")
+            # roll = quad.getAttitude("ROLL")
             if len(events) != 0:
                 poseCheck = events[0].extractPose()
             if poseCheck == "FIST":
-                # get hand position and drone roll 
-                x, y = events[0].hand.landmarks[12,:2]
-                roll = quad.getAttitude("ROLL")  # returns positive values for CCW angles, and vice versa
-                if (roll < 0): roll_direction = "CW"
-                else: roll_direction = "CCW"
+                pass
+                # # get hand position and drone roll 
+                # x, y = events[0].hand.landmarks[12,:2]
+                # roll = quad.getAttitude("ROLL")  # returns positive values for CCW angles, and vice versa
 
-                # center and normalize vector for ease of computation 
-                fistVec = np.array([x-internalCamWidth/2, 
-                                    internalCamHeight/2-y])
-                fistVec = fistVec/np.linalg.norm(fistVec)
+                # # center and normalize vector for ease of computation 
+                # fistVec = np.array([x-internalCamWidth/2, 
+                #                     internalCamHeight/2-y])
+                # fistVec = fistVec/np.linalg.norm(fistVec)
                 
-                # rotate fistVec theta radians CCW about the origin
-                c = np.cos(roll)
-                s = np.sin(roll)
-                rotation_matrix = np.array([[c, -s], [s, c]])
-                fistVec_rotated = rotation_matrix @ fistVec
+                # # rotate fistVec theta radians CCW about the origin
+                # c = np.cos(roll)
+                # s = np.sin(roll)
+                # rotation_matrix = np.array([[c, -s], [s, c]])
+                # fistVec_rotated = rotation_matrix @ fistVec
 
-                # evaluate rotation accuracy  
-                # find the CCW angle from fistVec to fistVec_rotated
-                angle_diff = np.arctan2(fistVec_rotated[1], fistVec_rotated[0]) - np.arctan2(fistVec[1], fistVec[0])
-                if (angle_diff < 0): angle_diff += 2 * np.pi 
-                angle_diff_direction = "CCW"
-                # if the roll angle was CW, convert the angle diff to CW
-                if (roll < 0): 
-                    angle_diff = 2*np.pi - angle_diff
-                    angle_diff_direction = "CW"
-                # find the difference between the rotated angle and the roll of the drone
-                angle_error = np.abs(roll) - angle_diff
-                # evaluate rotation accuracy
-                rounded_diff = np.round(np.abs(angle_error),5)
-                is_success = rounded_diff==0
+                # # evaluate rotation accuracy  
+                # # find the CCW angle from fistVec to fistVec_rotated
+                # angle_diff = np.arctan2(fistVec_rotated[1], fistVec_rotated[0]) - np.arctan2(fistVec[1], fistVec[0])
+                # if (angle_diff < 0): angle_diff += 2 * np.pi 
+                # # find the difference between the rotated angle and the roll of the drone
+                # angle_error = roll - angle_diff
+                # # evaluate rotation accuracy
+                # rounded_diff = np.round(np.abs(angle_error),5)
+                # is_success = rounded_diff==0
 
-                # print values for debugging
-                print(f"original vector: {fistVec}")
-                print(f"roll: {np.degrees(np.abs(roll))} {roll_direction} degrees")
-                print(f"rotated vector: {fistVec_rotated}")
-                print(f"rotated angle: {np.degrees(angle_diff)} {angle_diff_direction} degrees")
-                if (roll_direction != angle_diff_direction):
-                    print("WARNING: roll ({roll_direction}) and rotated_angle ({angle_diff_direction}) are in different directions")
-                else:
-                    print(f"angle error: {np.degrees(angle_error)} {roll_direction} degree")
-                    print(f"success: {is_success}\n--------------------")
+                # # print values for debugging
+                # print(f"original vector: {fistVec}")
+                # print(f"roll: {np.degrees(roll)} degrees")
+                # print(f"rotated vector: {fistVec_rotated}")
+                # print(f"rotated angle: {np.degrees(angle_diff)} degrees")
+                # print(f"angle error: {np.degrees(angle_error)} degree")
+                # print(f"success: {is_success}\n--------------------")
 
             if self.use_renderer:
                 frame = self.renderer.draw(frame, hands, bag)
@@ -349,6 +340,3 @@ class HandController:
                     break
         self.renderer.exit()
         self.tracker.exit()
-            
-
-
